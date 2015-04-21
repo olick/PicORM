@@ -1107,13 +1107,29 @@ abstract class Model
             }
         }
 
+        $where = "";
+
         // restrict with model primary key
-        $helper->where(self::formatTableNameMySQL() . ".`" . static::$_primaryKey . "`", "=", "?");
-        $params[] = $this->{static::$_primaryKey};
+        if(is_array($this::$_primaryKey)){
+            $where = array();
+            foreach($this::$_primaryKey as $key){
+                $where[]= self::formatTableNameMySQL() . ".`" . $key . "`" ;
+            }
+        }else{
+            $where = self::formatTableNameMySQL() . ".`" . static::$_primaryKey . "`";
+        }
+        $helper->where($where, "=", "?");
+        if(is_array($this::$_primaryKey)){
+            foreach($this::$_primaryKey as $key){
+                $params [] = $this->{$key};
+            }
+        }else{
+            $params [] = $this->{static::$_primaryKey};
+        }
 
         // update model in database
         $query = static::$_dataSource->prepare($helper->buildQuery());
-        $query->execute($params);
+        $test = $query->execute($params);
 
         // check for mysql error
         $errorcode = $query->errorInfo();
@@ -1137,12 +1153,22 @@ abstract class Model
         $queryHelp = new InternalQueryHelper();
         $queryHelp->insertInto(self::formatTableNameMySQL());
 
+        $test = $this::$_primaryKey;
+
         // if primary key has forced value and is not present in tableField array
-        if (!empty($this->{static::$_primaryKey}) && !in_array(static::$_primaryKey, static::$_tableFields)) {
+        if (!is_array($this::$_primaryKey)&&!empty($this->{static::$_primaryKey}) && !in_array(static::$_primaryKey, static::$_tableFields)){
             array_unshift(static::$_tableFields, static::$_primaryKey);
         } else {
-            // use autoincrement for primary key
-            $queryHelp->values(static::$_primaryKey, 'NULL');
+            if(is_array($this::$_primaryKey)){
+                    foreach($this::$_primaryKey as $key){
+                        if(!in_array($key, static::$_tableFields)){
+                            array_unshift(static::$_tableFields, $key);
+                        }
+                    }
+            }else{
+                // use autoincrement for primary key
+                $queryHelp->values(static::$_primaryKey, 'NULL');
+            }
         }
 
         // save model fields
@@ -1174,8 +1200,10 @@ abstract class Model
         $this->_isNew = false;
 
         // if empty PK grab the last insert ID for auto_increment fields
-        if (empty($this->{static::$_primaryKey})) {
-            $this->{static::$_primaryKey} = static::$_dataSource->lastInsertId();
+
+
+        if (!is_array($this::$_primaryKey)&&empty($this->{static::$_primaryKey})) {
+                $this->{static::$_primaryKey} = static::$_dataSource->lastInsertId();
         }
 
         return true;

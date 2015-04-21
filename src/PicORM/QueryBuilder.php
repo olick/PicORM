@@ -176,19 +176,19 @@ class QueryBuilder
      */
     public function buildQuery()
     {
-        $where   = implode(' ', $this->_where);
-        $join    = implode(' ', $this->_join);
+        $where = implode(' ', $this->_where);
+        $join = implode(' ', $this->_join);
         $orderBy = count($this->_orderBy) > 0 ? sprintf('ORDER BY %s', implode(',', $this->_orderBy)) : '';
         $groupBy = count($this->_groupBy) > 0 ? sprintf('GROUP BY %s', implode(',', $this->_groupBy)) : '';
-        $hint    = count($this->_queryHint) > 0 ? sprintf(' %s ', implode(',', $this->_queryHint)) : '';
-        $limit   = $this->_limit;
-        $query   = '';
+        $hint = count($this->_queryHint) > 0 ? sprintf(' %s ', implode(',', $this->_queryHint)) : '';
+        $limit = $this->_limit;
+        $query = '';
 
         switch ($this->_queryType) {
             case self::SELECT:
                 $select = implode(',', $this->_select);
-                $from   = !empty($this->_from) ? sprintf('FROM %s', $this->_from) : '';
-                $query  = sprintf(
+                $from = !empty($this->_from) ? sprintf('FROM %s', $this->_from) : '';
+                $query = sprintf(
                     "SELECT %s %s %s %s %s %s %s %s %s",
                     $hint,
                     $select,
@@ -206,12 +206,12 @@ class QueryBuilder
 
                 // save lastInsertValues
                 if (!empty($this->_lastInsertValues)) {
-                    $this->_insertValues[]   = $this->_lastInsertValues;
+                    $this->_insertValues[] = $this->_lastInsertValues;
                     $this->_lastInsertValues = array();
                 }
 
                 // grab field name from first line
-                $keys   = array_keys($this->_insertValues[0]);
+                $keys = array_keys($this->_insertValues[0]);
                 $nbKeys = count($keys) - 1;
 
                 // reorder values and build string
@@ -301,7 +301,7 @@ class QueryBuilder
      * Add values (INSERT|UPDATE)
      *
      * @param string $nameParams - field name
-     * @param string $val        - field value
+     * @param string $val - field value
      *
      * @return $this
      */
@@ -317,7 +317,7 @@ class QueryBuilder
      * Create new values set for multiple insert query
      *
      * @param $nameParams - field name
-     * @param $val        - field value
+     * @param $val - field value
      *
      * @return $this
      */
@@ -348,7 +348,7 @@ class QueryBuilder
     public function set($nameParams, $val)
     {
         $this->_setName[] = $nameParams;
-        $this->_setVal[]  = $val;
+        $this->_setVal[] = $val;
 
         return $this;
     }
@@ -401,7 +401,7 @@ class QueryBuilder
     public function update($tableName)
     {
         $this->_queryType = self :: UPDATE;
-        $this->_update    = $tableName;
+        $this->_update = $tableName;
 
         return $this;
     }
@@ -418,7 +418,7 @@ class QueryBuilder
     public function delete($tableName)
     {
         $this->_queryType = self :: DELETE;
-        $this->_delete    = $tableName;
+        $this->_delete = $tableName;
 
         return $this;
     }
@@ -435,7 +435,7 @@ class QueryBuilder
     public function insertInto($tableName)
     {
         $this->_queryType = self :: INSERT;
-        $this->_insert    = $tableName;
+        $this->_insert = $tableName;
 
         return $this;
     }
@@ -523,8 +523,19 @@ class QueryBuilder
             $booleanOperator = "WHERE";
         }
 
-        // create and store where
-        $this->_where[] = sprintf("%s %s %s %s", $booleanOperator, $field, $comparisonOperator, $value);
+        if (is_array($field)) {
+            // create and store where
+            $this->_where[] = sprintf("%s %s %s %s", $booleanOperator, $field[0], $comparisonOperator, $value);
+            foreach ($field as $f) {
+                if ($f != $field[0]) {
+                    $this->_where[] = sprintf("%s %s %s %s", "AND", $f, $comparisonOperator, $value);
+                }
+            }
+        } else {
+            // create and store where
+            $this->_where[] = sprintf("%s %s %s %s", $booleanOperator, $field, $comparisonOperator, $value);
+        }
+
 
         return $this;
     }
@@ -582,7 +593,7 @@ class QueryBuilder
     /**
      * Reset the order clause from query
      *
-     * @param null   $orderName
+     * @param null $orderName
      * @param string $orderVal
      *
      * @return $this
